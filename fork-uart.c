@@ -28,10 +28,26 @@
 //const char *portTTY = "/dev/ttyS4";
 //const char *portTTY = "/dev/ttyS5";
 const char *portTTY = "/dev/ttyUSB0"; // ttyUSB0 is the FT232 based USB2SERIAL Converter
+int fd; //File Descriptor
 
 void main(void)
 	{
-	int fd; //File Descriptor
+            initialisation();
+	    pid_t pid;
+	    pid = fork();
+
+	    if(pid < 0){perror("fork failed");
+            else if(pid == 0){codeduprcessusenfant(); wait(NULL);}
+	    else{codeduprocessusparent();}
+	    return 0;
+	// Write data to serial port 
+	close(fd); // Close the Serial port 
+
+	}
+
+
+void initialisation(void)
+{
 	
 	printf("\n Ecriture Port Serie");
 
@@ -62,24 +78,17 @@ void main(void)
 
 	SerialPortSettings.c_iflag &= ~(IXON | IXOFF | IXANY);	// Disable XON/XOFF flow control both i/p and o/p
 
-	SerialPortSettings.c_lflag |= (ICANON | ECHO | ECHOE | ISIG);  // Non Cannonical mode, Disable echo, Disable signal  
+	SerialPortSettings.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);  // Non Cannonical mode, Disable echo, Disable signal  
 
 	SerialPortSettings.c_oflag &= ~OPOST;	//No Output Processing
+	
+	// Setting Time outs 
+	SerialPortSettings.c_cc[VMIN] = 1; // Read at least X character(s) 
+	SerialPortSettings.c_cc[VTIME] = 0; // Wait 3sec (0 for indefinetly) 
 
+	
 	if((tcsetattr(fd, TCSANOW, &SerialPortSettings)) != 0) // Set the attributes to the termios structure
 		printf("\n  Erreur! configuration des attributs du port serie");
 
-	// Write data to serial port 
-	char write_buffer[] = "ABCDE12345";	// Buffer containing characters to write into port
-	int  bytes_written  = 0;  	// Value for storing the number of bytes written to the port 
 
-	bytes_written = write(fd, write_buffer, sizeof(write_buffer)); // use write() to send data to port 
-										// "fd"                   - file descriptor pointing to the opened serial port
-										//	"write_buffer"         - address of the buffer containing data
-										// "sizeof(write_buffer)" - No of bytes to write 
-	printf("\n Ecriture de %d octets : %s ecrit sur le port %s", bytes_written, write_buffer, portTTY);
-	printf("\n");
-
-	close(fd); // Close the Serial port 
-
-	}
+}
